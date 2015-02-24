@@ -1,0 +1,70 @@
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{}
+
+\documentclass{article}
+
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage[round]{natbib}
+\usepackage{bbm}
+\usepackage{hyperref}
+\usepackage{algorithm} 
+\usepackage{algpseudocode}
+% The line below tells R to use knitr on this.
+%\VignetteEngine{knitr::knitr}
+
+\title{R package for \cite{Calderhead2014} A general construction for parallelizing Metropolis−Hastings algorithms}
+       \author{Alejandra Avalos-Pacheco \and Tom Jin \and Valerio Perrone}
+       
+       \begin{document}
+       
+       \maketitle
+       
+       \begin{abstract}
+       {\tt GPMH} is a package for implementing the {\tt rcGMH} algorithm with a toy example provided.
+       \end{abstract}
+       
+\section{Introduction}
+In a typical Bayesian framework, one of the main aims is computing posterior expectations with respect to a target probability distribution $\pi$. This problem corresponds to evaluating integrals of the type of $I(f):= \int_\chi f(x) \pi(dx)$,
+where $f \in L_1(X,\pi)=\{f: \pi (|f|)< \infty\}$. The Markov Chain Monte Carlo (MCMC) approach consists in simulating an ergodic Markov Chain $(X_n)_{n \geq 0}$ with limiting distribution $\pi$ in order to estimate $I$ by $
+\hat{I}(f):= \frac{1}{N} \sum_{i=t}^{t+N}f(X_i)$, for some $t>0$.
+A solution is provided by the Metropolis-Hasting (MH) algorithm, which constructs a Markov Chain converging to the distribution $\pi$. Given the current value $X_n$, $Y_{n+1}$ is sampled from a given proposal distribution $K(X_n,Y_{n+1})$ and then accepted with probability 
+\begin{align}
+\alpha(X_n,Y_{n+1})= \text{min} \left\{ 1, \frac{\pi(Y_{n+1})K(Y_{n+1},X_{n})}{\pi(X_n)K(X_n,Y_{n+1})} \right\}.
+\end{align}
+If the proposed value is accepted, we set $X_{n+1}=Y_{n+1}$. Otherwise, $X_{n+1}=X_{n}.$ \\
+
+The computational efficiency of the Metropolis-Hastings can be improved. An intuition is to make use of the increasingly low-cost parallelism and propose multiple points in parallel at each iteration. Many existing attempts to parallelise Metropolis-Hasting rely on retaining just one of these points. These procedures, however, suffer from the computational inefficiency of not using the remaining points. The Generalised Metropolis-Hastings algorithm proposed by \cite{Calderhead2014} builds on these ideas by retaining the information contained in all proposed points. This is done by weighting them with proper likelihoods and sampling from them as shown in Algorithm (\ref{alg1}).
+
+
+%First, a variable $X_1$ is initialized and $N$ points are drawn from the proposal distribution $K(x_1,.)$. Then, compute a vector of likelihoods $A$ for all the $N$ sampled points plus for the point that was used to generate the others. Note that this computation can be easily parallelised. Than, all the $N+1$ points are sampled, say $N$ times, according to their likelihoods $A_j$ and the $N$ resulting points are the new sample of the Markov Chain. 
+
+\begin{algorithm}[H]
+\caption{{\tt GMH} \cite{Calderhead2014}} \label{alg1}
+\begin{algorithmic}
+\State \textbf{Input} $X_1,I=1,i=0$.
+\State \textbf{Output} $(X_1,...,X_{n \times (N+1)})$.  
+\For{\texttt{$i=1$ to $n$}}
+        \State \texttt{Draw $N$ points $x_2, \dots{}, x_{N+1}$ from $K(x_I,\cdot)$.}
+        \State \texttt{Compute} $A(j)= \pi(x_j)K(x_j,x_{\setminus j}) \quad \forall j \in [1,\dots,N+1]$.
+
+        \State \texttt{Sample with replacement the $N+1$ points with probabilities $A(j)$ to obtain the sample $X_k$, $k=(i-1)*N+i,\dots{},i*(N+1)$}
+          
+
+  \State \texttt{Draw $I \sim U[1,\dots,N+1]$, set $i=i+N$}
+\EndFor 
+\end{algorithmic}
+\end{algorithm}
+       
+\section{Package instalation}
+
+\section{Overview}
+
+\section{Toy Examples}
+
+\section{Extensions}
+Write here all the stuff that Tom wanted to do but didn't have time to do it
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
