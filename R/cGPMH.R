@@ -1,4 +1,21 @@
-#Generalised MH algorithm WITH SOME C CALLING from Cgmh.c
+#' @title Generalised Metropolis-Hastings algorithm (R/C version) 
+#'
+#'  @description Runs the Generalised Metropolis-Hastings algorithm for sampling from a given target distribution. 
+#'  At each iteration, the algorithm draws N new points from the proposal distribution given the current state, 
+#'  then it calls the C function "Cgmh.c" to compute the likelihoods of all N+1 points (the N new points 
+#'  plus the current state). Then, these N+1 points are sampled with replacement according to their likelihoods 
+#'  and the new sample of N+1 points is obtained. Finally, a state from these N+1 points is randomly chosen to
+#'  generate the N new points in the successive iteration.
+#'  @param target The target distribution that the algorithm aims at sampling from.
+#'  @param kernel Input function to draw samples from the proposal distribution.
+#'  @param dkernel Input function to evaluate the proposal distribution pointwise.
+#'  @param init.state Sets the starting value for the first point of the Markov Chain. 
+#'  @param n Number of total iterations of the algorithm.
+#'  @param N Number of samples to draw from the proposal distribution at each step.
+#'  @return Returns a vector of \code{n*(N+1)} samples from the target distribution
+#'  @example demo/DemoRC.R
+#'  @export rcGPMH
+
 rcGPMH <- function(target, kernel, dkernel, init.state, n, N=8) {
   d <- length(init.state)
   I <- 1 
@@ -30,5 +47,6 @@ rcGPMH <- function(target, kernel, dkernel, init.state, n, N=8) {
   
   output <- list(x = X[-1, ], n = n, call = match.call())
   class(output) <- "GPMH"
+  class(output$x) <- "GPMH"
   return(output)
 }
