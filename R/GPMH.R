@@ -1,11 +1,13 @@
 #' @title Generalised Metropolis-Hastings algorithm (R version) 
 #'
-#'  @description Runs the Generalised Metropolis-Hastings algorithm for sampling from a given target distribution. 
-#'  At each iteration, the algorithm draws N new points from the proposal distribution given the current state, 
-#'  then it computes the likelihoods of all N+1 points (the N new points plus the current state). 
-#'  Then, these N+1 points are sampled with replacement according to their likelihoods and the new sample of N+1 points
-#'  is obtained. Finally, a state from these N+1 points is randomly chosen to generate the N new points
-#'  in the successive iteration.
+#'  @description Runs the Generalised Metropolis-Hastings algorithm for sampling
+#'  from a given target distribution. At each iteration, the algorithm draws N 
+#'  new points from the proposal distribution given the current state, then it 
+#'  computes the likelihoods of all N+1 points (the N new points plus the 
+#'  current state). Then, these N+1 points are sampled with replacement 
+#'  according to their likelihoods and the new sample of N+1 points is obtained.
+#'  Finally, a state from these N+1 points is randomly chosen to generate the N 
+#'  new points in the successive iteration.
 #'  @param target The target distribution that the algorithm aims at sampling from.
 #'  @param kernel Input function to draw samples from the proposal distribution.
 #'  @param dkernel Input function to evaluate the proposal distribution pointwise.
@@ -16,7 +18,7 @@
 #'  @example demo/DemoR.R
 #'  @export rGPMH
 
-rGPMH <- function(target, kernel, dkernel, init.state, n, N=8) {
+rGPMH <- function(target, kernel, dkernel, init.state, n, N = 8) {
   d <- length(init.state)
   I <- 1 
   X <- matrix(NA, nrow = n*(N + 1), ncol = d)
@@ -28,15 +30,15 @@ rGPMH <- function(target, kernel, dkernel, init.state, n, N=8) {
     Y[j, ] <- kernel(X[1, ]) # generate N new points from the proposal
   }
   
-  K<-numeric(N+1)
-  A<-numeric(N+1) 
+  K <- numeric(N+1)
+  A <- numeric(N+1) 
   
   for (i in 1:n) { 
     for(j in 1:(N+1)) {
       for (k in 1:(N+1)) {
         K[k] <- dkernel(Y[j, ], Y[k, ])  
       }
-      A[j]<- prod(K[-j])*target(Y[j, ]) # likelihood of each of the N+1 points
+      A[j]<- prod(K[-j]) * target(Y[j, ]) # likelihood of each of the N+1 points
     }
     
     # sample from the N+1 points to obtain the new N+1 MCMC samples 
@@ -51,7 +53,6 @@ rGPMH <- function(target, kernel, dkernel, init.state, n, N=8) {
   }
   
   output <- list(x = X[-1, ], n = n, call = match.call())
-  class(output$x) <- "GPMH"
   class(output) <- "GPMH"
   return(output)
 }

@@ -1,11 +1,13 @@
 #' @title Generalised Metropolis-Hastings algorithm (R/C version) 
 #'
-#'  @description Runs the Generalised Metropolis-Hastings algorithm for sampling from a given target distribution. 
-#'  At each iteration, the algorithm draws N new points from the proposal distribution given the current state, 
-#'  then it calls the C function "Cgmh.c" to compute the likelihoods of all N+1 points (the N new points 
-#'  plus the current state). Then, these N+1 points are sampled with replacement according to their likelihoods 
-#'  and the new sample of N+1 points is obtained. Finally, a state from these N+1 points is randomly chosen to
-#'  generate the N new points in the successive iteration.
+#'  @description Runs the Generalised Metropolis-Hastings algorithm for sampling
+#'   from a given target distribution. At each iteration, the algorithm draws N 
+#'   new points from the proposal distribution given the current state, then it 
+#'   calls the C function "Cgmh.c" to compute the likelihoods of all N+1 points 
+#'   (the N new points plus the current state). Then, these N+1 points are 
+#'   sampled with replacement according to their likelihoods and the new sample 
+#'   of N+1 points is obtained. Finally, a state from these N+1 points is 
+#'   randomly chosen to generate the N new points in the successive iteration.
 #'  @param target The target distribution that the algorithm aims at sampling from.
 #'  @param kernel Input function to draw samples from the proposal distribution.
 #'  @param dkernel Input function to evaluate the proposal distribution pointwise.
@@ -16,7 +18,7 @@
 #'  @example demo/DemoRC.R
 #'  @export rcGPMH
 
-rcGPMH <- function(target, kernel, dkernel, init.state, n, N=8) {
+rcGPMH <- function(target, kernel, dkernel, init.state, n, N = 8) {
   d <- length(init.state)
   I <- 1 
   X <- matrix(NA, nrow = n*(N + 1), ncol = d)
@@ -24,7 +26,7 @@ rcGPMH <- function(target, kernel, dkernel, init.state, n, N=8) {
   Y <- matrix(NA, nrow = N+1, ncol = d)
   Y[1,] <- X[1,]
   
-  for(j in 2:(N+1)){
+  for(j in 2:(N+1)) {
     Y[j, ] <- kernel(X[1, ]) # generate N new points from the proposal
   }
   
@@ -47,6 +49,5 @@ rcGPMH <- function(target, kernel, dkernel, init.state, n, N=8) {
   
   output <- list(x = X[-1, ], n = n, call = match.call())
   class(output) <- "GPMH"
-  class(output$x) <- "GPMH"
   return(output)
 }
