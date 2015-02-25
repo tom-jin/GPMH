@@ -9,6 +9,8 @@
 \usepackage{hyperref}
 \usepackage{algorithm} 
 \usepackage{algpseudocode}
+\usepackage{graphicx}
+
 % The line below tells R to use knitr on this.
 %\VignetteEngine{knitr::knitr}
 
@@ -23,7 +25,17 @@
        {\tt GPMH} is a package for implementing the {\tt rcGMH} algorithm with a toy example provided.
        \end{abstract}
        
-\section{Introduction}
+\section{Introduccion}
+The {\tt GPMH} package provides an implementation for the general construction for parallelizing Metropolis-Hastings algorithms provided by \cite{Calderhead2014}. This packages provides different functions for some technologies to evaluate de algorithm in parallel:{\tt xMH} {\tt rGPMH}, {\tt rcGPMH}, ADD TOM's technologies (functions explained bellow).
+
+\section{Package installation}
+The package {\tt GPMH} is located in \\ \url{https://github.com/tom-jin/GPMH.git}.\\
+Once downloaded, load the package by:
+<<packageChunk, eval=FALSE>>=
+library(GPMH)
+@
+
+\section{Algorithm overview}
 In a typical Bayesian framework, one of the main aims is computing posterior expectations with respect to a target probability distribution $\pi$. This problem corresponds to evaluating integrals of the type of $I(f):= \int_\chi f(x) \pi(dx)$,
 where $f \in L_1(X,\pi)=\{f: \pi (|f|)< \infty\}$. The Markov Chain Monte Carlo (MCMC) approach consists in simulating an ergodic Markov Chain $(X_n)_{n \geq 0}$ with limiting distribution $\pi$ in order to estimate $I$ by $
 \hat{I}(f):= \frac{1}{N} \sum_{i=t}^{t+N}f(X_i)$, for some $t>0$.
@@ -55,11 +67,59 @@ The computational efficiency of the Metropolis-Hastings can be improved. An intu
 \end{algorithmic}
 \end{algorithm}
        
-\section{Package instalation}
 
-\section{Overview}
+\section{Functions overview}
+\subsection{{\tt MH}}
+Runs the standard Metropolis-Hastings algorithm for sampling from a given target distribution.
+<<MHChunk>>=
+xMH<-MH(target=function(x) {0.2*dnorm(x,12,1)+0.3*dnorm(x,8,1)+0.4*dnorm(x,4,1)+0.6*dnorm(x,15,1)+0.3*dnorm(x,20,1)},
+         kernel=function(x) {rnorm(n=1, x)},
+         dkernel=function(x,y) {dnorm(y, x)},
+         init.state=5,
+         n=100000)
 
-\section{Toy Examples}
+plot(xMH$x)
+summary(xMH$x)
+@
+\subsection{{\tt rGPMH}}
+Runs the Generalised Metropolis-Hastings algorithm for sampling from a given target distribution. At each iteration, the algorithm draws N new points from the proposal distribution given the current state, then it computes the likelihoods of all N+1 points (the N new points plus the current state). Then, these N+1 points are sampled with replacement according to their likelihoods and the new sample of N+1 points is obtained. Finally, a state from these N+1 points is randomly chosen to generate the N new points in the successive iteration.
+<<rGPMHChunk>>=
+xGMH<-rGPMH(target=function(x) {0.2*dnorm(x,12,1)+0.3*dnorm(x,8,1)+0.4*dnorm(x,4,1)+0.6*dnorm(x,15,1)+0.3*dnorm(x,20,1)},
+          kernel=function(x) {rnorm(n=1, x)},
+          dkernel=function(x,y) {dnorm(y, x)},
+          init.state=5,
+          n=100000,
+          N=8)
+
+plot(xGMH$x)
+summary(xGMH$x)
+@
+\subsection{{\tt rcGPMH}}
+Runs the Generalised Metropolis-Hastings algorithm for sampling from a given target distribution. At each iteration, the algorithm draws N new points from the proposal distribution given the current state, then it calls the C function "Cgmh.c" to compute the likelihoods of all N+1 points (the N new points plus the current state). Then, these N+1 points are sampled with replacement according to their likelihoods and the new sample of N+1 points is obtained. Finally, a state from these N+1 points is randomly chosen to generate the N new points in the successive iteration.
+<<rcChunk>>=
+xrcGMH<-rcGPMH(target=function(x) {0.2*dnorm(x,12,1)+0.3*dnorm(x,8,1)+0.4*dnorm(x,4,1)+0.6*dnorm(x,15,1)+0.3*dnorm(x,20,1)},
+              kernel=function(x) {rnorm(n=1, x)},
+              dkernel=function(x,y) {dnorm(y, x)},
+              init.state=5,
+              n=100000,
+              N=8)
+
+plot(xrcGMH$x)
+summary(xrcGMH$x)
+@
+
+\subsection{C}
+\subsection{CUDA}
+
+\section{Comparison of technologies}
+In the following examples, we set a mixture of univariate normals as target distribution. We compared the running times of the standard Metropolis-Hastings (MH) algorithm with the Generalised Metropolis-Hastings (GMH) using different technologies and different values of $N$ (the number of points drawn at each iteration from the proposal distribution). The results, which are plotted in Figure \ref{Tech}, reveal the great sensitivity of running time to the technology used. The blue point at $N=1$ corresponds to the regular MH algorithm. The green points correspond to the pure R implementation of the GMH, while the blue and red ones to the versions in which the vector of likelihoods $A$ is computed in parallel within a C function. More specifically, for the blue points the algorithm was run in the CDT desktop ???, while for the red ones we used OPEN MP???. The results illustrate that the parallelised versions of GMH clearly outperform both the pure R implementation and the standard MH, with the difference becoming more evident as the number $N$ of parallely drawn points increases. On the contrary, the pure R version gets increasingly slower as $N$ increases, which is perfectly consistent with the low performance of R in computing for loops.
+\begin{figure}[H]
+\begin{center}
+\includegraphics[scale=0.4]{Technologies.pdf}
+\caption{Time comparison between different technologies.}
+\label{Tech}
+\end{center}
+\end{figure}
 
 \section{Extensions}
 Write here all the stuff that Tom wanted to do but didn't have time to do it
