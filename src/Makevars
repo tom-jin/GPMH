@@ -1,2 +1,7 @@
+NVCC = /opt/cuda-7.0/bin/nvcc
 PKG_CFLAGS = -O3 -I/usr/local/include
-PKG_LIBS = -L/usr/local/lib -fopenmp
+PKG_LIBS = -L/usr/local/lib -lgsl
+
+all: $(SHLIB)
+cudaGPMH.o: cudaGPMH.c
+	$(NVCC) -x cu -O3 -arch=compute_37 -code=sm_37 -use_fast_math -Xcompiler -rdynamic -lm -lcurand GPMH.c -o GPMH.o
