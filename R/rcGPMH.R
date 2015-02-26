@@ -17,6 +17,7 @@
 #'  @return Returns a vector of \code{n*(N+1)} samples from the target distribution
 #'  @example demo/DemoRC.R
 #'  @export rcGPMH
+#'  @useDynLib GPMH
 
 rcGPMH <- function(target, kernel, dkernel, init.state, n, N = 8) {
   d <- length(init.state)
