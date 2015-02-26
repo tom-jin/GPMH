@@ -20,7 +20,7 @@ __device__ double cuda_gaussian_pdf(double x, double var)
 
 __global__ void cuda_rkernel(double *source, double *destination, double *random, int dim, int N)
 {
-	int tid = threadIdx.x + blockIdx.x * blockDim.x;
+  int tid = threadIdx.x + blockIdx.x * blockDim.x;
 	if(tid < N)
 	{
 		for(int i=0; i<dim; i++)
@@ -102,42 +102,42 @@ void cudaGPMH(double *samples, void *target_dummy, void *rkernel_dummy, void *dk
 
 	// Seed random number generator
   srand((unsigned int)time(0));
-	CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
-	CURAND_CALL(curandSetPseudoRandomGeneratorSeed(gen, (unsigned int) time(NULL)));
+	curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
+	curandSetPseudoRandomGeneratorSeed(gen, (unsigned int) time(NULL));
 
 	// malloc arrays
 	samples = (double*)malloc(*num_samples * dim * sizeof(double));
-	CUDA_CALL(cudaMalloc((void**)&dev_samples, *num_samples * dim * sizeof(double)));
-	CUDA_CALL(cudaMalloc((void**)&dev_proposals, ((*N)+1)*dim*sizeof(double)));
-	CUDA_CALL(cudaMalloc((void**)&dev_acceptance, ((*N)+1)*sizeof(double)));
-	CUDA_CALL(cudaMalloc((void**)&dev_rand, (*N)*dim*sizeof(double)));
+	cudaMalloc((void**)&dev_samples, *num_samples * dim * sizeof(double));
+	cudaMalloc((void**)&dev_proposals, ((*N)+1)*dim*sizeof(double));
+	cudaMalloc((void**)&dev_acceptance, ((*N)+1)*sizeof(double));
+	cudaMalloc((void**)&dev_rand, (*N)*dim*sizeof(double));
 
-	CUDA_CALL(cudaMemcpy(dev_proposals+(dim*(*N)), &init, dim * sizeof(double), cudaMemcpyDefault));
+	cudaMemcpy(dev_proposals+(dim*(*N)), &init, dim * sizeof(double), cudaMemcpyDefault);
 
 	while(n < *num_samples) {
 		// MCMC Update
-		CURAND_CALL(curandGenerateNormalDouble(gen, dev_rand, (*N)*dim, 0.0, 1.0));
+		curandGenerateNormalDouble(gen, dev_rand, (*N)*dim, 0.0, 1.0);
 		cuda_rkernel<<<1, (*N)>>>(dev_proposals+((*N)*dim), dev_proposals, dev_rand, dim, (*N));
 
 		// Calculate acceptance probability
 		cuda_acceptance<<<1, (*N)+1>>>(dev_proposals, dev_acceptance, dim, (*N)+1);
 
 		// Sample
-		CURAND_CALL(curandGenerateUniformDouble(gen, dev_rand, (*N)));
+		curandGenerateUniformDouble(gen, dev_rand, (*N));
 		cuda_sample<<<1, (*N)>>>(dev_proposals, dev_acceptance, dev_samples+(n*dim), dev_rand, dim, (*N)+1, (*N));
 
     int i = rand() % (*N);
-		CUDA_CALL(cudaMemcpy(dev_proposals+(dim*(*N)), dev_samples+(dim*(n+i)), dim * sizeof(double), cudaMemcpyDefault));
+		cudaMemcpy(dev_proposals+(dim*(*N)), dev_samples+(dim*(n+i)), dim * sizeof(double), cudaMemcpyDefault);
 
     //Update counter.
 		n += (*N);
 	}
-  CUDA_CALL(cudaMemcpy(samples, dev_samples, *num_samples*dim*sizeof(double), cudaMemcpyDefault));
+  cudaMemcpy(samples, dev_samples, *num_samples*dim*sizeof(double), cudaMemcpyDefault);
 
-	CUDA_CALL(cudaFree(dev_samples));
-	CUDA_CALL(cudaFree(dev_proposals));
-	CUDA_CALL(cudaFree(dev_acceptance));
-  CUDA_CALL(cudaFree(dev_rand));
+	cudaFree(dev_samples);
+	cudaFree(dev_proposals);
+	cudaFree(dev_acceptance);
+    cudaFree(dev_rand);
 
 	return;
 }
