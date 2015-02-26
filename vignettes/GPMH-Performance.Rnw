@@ -25,27 +25,34 @@
        {\tt GPMH} is a package for implementing the {\tt rcGMH} algorithm with a toy example provided.
        \end{abstract}
        
-\section{Introduccion}
-The {\tt GPMH} package provides an implementation for the general construction for parallelizing Metropolis-Hastings algorithms provided by \cite{Calderhead2014}. This packages provides different functions for some technologies to evaluate de algorithm in parallel:{\tt xMH} {\tt rGPMH}, {\tt rcGPMH}, ADD TOM's technologies (functions explained bellow).
+\section{Introduction}
+The {\tt GPMH} package provides an implementation for the general construction for parallelizing Metropolis-Hastings algorithms provided by \cite{Calderhead2014}. This packages provides different functions for some technologies to evaluate the algorithm in parallel:{\tt xMH} {\tt rGPMH}, {\tt rcGPMH}, \texttt{cGPMH} and \texttt{cudaGPMH}.
 
 \section{Package installation}
-The package {\tt GPMH} is located in \\ \url{https://github.com/tom-jin/GPMH.git}.\\
-Once downloaded, load the package by:
+The package is hosted on GitHib at \url{https://github.com/tom-jin/GPMH}.
+Install the package by:
+<<packageInstall, eval=FALSE>>=
+#install.packages("devtools")
+devtools::install_github("tom-jin/GPMH")
+@
+Then load the library.
 <<packageChunk, cache=TRUE>>=
 library(GPMH)
 @
+
+A vignette and several demos are included and can by listed by running the \texttt{vignette()} and \texttt{demo()} commands respectively.
 
 \section{Algorithm overview}
 In a typical Bayesian framework, one of the main aims is computing posterior expectations with respect to a target probability distribution $\pi$. This problem corresponds to evaluating integrals of the type of $I(f):= \int_\chi f(x) \pi(dx)$,
 where $f \in L_1(X,\pi)=\{f: \pi (|f|)< \infty\}$. The Markov Chain Monte Carlo (MCMC) approach consists in simulating an ergodic Markov Chain $(X_n)_{n \geq 0}$ with limiting distribution $\pi$ in order to estimate $I$ by $
 \hat{I}(f):= \frac{1}{N} \sum_{i=t}^{t+N}f(X_i)$, for some $t>0$.
-A solution is provided by the Metropolis-Hasting (MH) algorithm, which constructs a Markov Chain converging to the distribution $\pi$. Given the current value $X_n$, $Y_{n+1}$ is sampled from a given proposal distribution $K(X_n,Y_{n+1})$ and then accepted with probability 
+A solution is provided by the Metropolis-Hastings (MH) algorithm, which constructs a Markov Chain converging to the distribution $\pi$. Given the current value $X_n$, $Y_{n+1}$ is sampled from a given proposal distribution $K(X_n,Y_{n+1})$ and then accepted with probability 
 \begin{align}
 \alpha(X_n,Y_{n+1})= \text{min} \left\{ 1, \frac{\pi(Y_{n+1})K(Y_{n+1},X_{n})}{\pi(X_n)K(X_n,Y_{n+1})} \right\}.
 \end{align}
 If the proposed value is accepted, we set $X_{n+1}=Y_{n+1}$. Otherwise, $X_{n+1}=X_{n}.$ \\
 
-The computational efficiency of the Metropolis-Hastings can be improved. An intuition is to make use of the increasingly low-cost parallelism and propose multiple points in parallel at each iteration. Many existing attempts to parallelise Metropolis-Hasting rely on retaining just one of these points. These procedures, however, suffer from the computational inefficiency of not using the remaining points. The Generalised Metropolis-Hastings algorithm proposed by \cite{Calderhead2014} builds on these ideas by retaining the information contained in all proposed points. This is done by weighting them with proper likelihoods and sampling from them as shown in Algorithm (\ref{alg1}).
+The computational efficiency of the Metropolis-Hastings can be improved. An intuition is to make use of the increasingly low-cost parallelism and propose multiple points in parallel at each iteration. Many existing attempts to parallelise Metropolis-Hastings rely on retaining just one of these points. These procedures, however, suffer from the computational inefficiency of not using the remaining points. The Generalised Metropolis-Hastings algorithm proposed by \cite{Calderhead2014} builds on these ideas by retaining the information contained in all proposed points. This is done by weighting them with proper likelihoods and sampling from them as shown in Algorithm (\ref{alg1}).
 
 
 %First, a variable $X_1$ is initialized and $N$ points are drawn from the proposal distribution $K(x_1,.)$. Then, compute a vector of likelihoods $A$ for all the $N$ sampled points plus for the point that was used to generate the others. Note that this computation can be easily parallelised. Than, all the $N+1$ points are sampled, say $N$ times, according to their likelihoods $A_j$ and the $N$ resulting points are the new sample of the Markov Chain. 
@@ -114,19 +121,33 @@ summary(xrcGMH$x)
 
 \subsection{C}
 
+Originally an implementation of the General Parallel Metropolis Hastings sampler for arbitrary dimension and if replaced with function pointers arbitrary distributions this was written as a C program taking its parameters by command line.
+
 <<cChunk, cache=TRUE>>=
 output <- cGPMH(target = NULL,
               rkernel = NULL,
               dkernel = NULL,
               init = c(5, 0),
               n = 10000,
-              N = 8)[2*(1:10000)-1]
+              N = 8)[2*(1:10000)-1][-1]
 
 plot(output, type="l")
 summary(output)
 @
 
 \subsection{CUDA}
+Deploying the sampler to GPUs required the rewriting of the previous C code into CUDA kernels that minimised on data movement across the PCIe bus. 
+Kernels were written for the proposal jump, the acceptance ratio calculation and the resampling. 
+All of the samples are kept in memory on board the GPU.
+Random number generation for the MCMC jump and the resampling is performed using the cuRand libraries host API to populate vectors of normal and uniform distributed random numbers.
+
+Should more samples than memory capacity be necessary it is anticipated that the all of the samples so far are copied in bulk before resuming simulations as even with async memory copies from device to host the performance impact of copying small sequences of memory is too great.
+This can be achieved with the existing code by running the sampler with a large $n$ and restarting it with initial values taken from the end of the previous chain.
+
+Similar to the issues of generalisability faced by the C code the CUDA faces are larger one requiring transition kernels and target likelihood densities to be written as \texttt{\_\_device\_\_} functions but with some modification this is possible since the introduction of function pointers in the CUDA since Fermi, but harmful to performance.
+The optimal way to sample is to recompile the code with the necessary distributions rather than load at run time.
+
+This code was developed and benchmarked on the CDT GPU compute server \texttt{greyostrich} which is equipped with 4 Nvidia K80 dual GPU cards.
 
 <<cudaChunk, cache=TRUE, eval=FALSE>>=
 output <- cudaGPMH(target = NULL,
@@ -134,24 +155,29 @@ output <- cudaGPMH(target = NULL,
               dkernel = NULL,
               init = c(5, 0),
               n = 10000,
-              N = 8)
+              N = 8)[2*(1:10000)-1][-1]
 
 plot(output, type="l")
 summary(output)
 @
 
+The performance results for CUDA are skewed against it because of the overhead incurred in initially launching code to the GPU. Run long enough with many threads ($N = 2048$) this code can produce $10^6$ samples a second.
+
 \section{Comparison of technologies}
-In the following examples, we set a mixture of univariate normals as target distribution. We compared the running times of the standard Metropolis-Hastings (MH) algorithm with the Generalised Metropolis-Hastings (GMH) using different technologies and different values of $N$ (the number of points drawn at each iteration from the proposal distribution). The results, which are plotted in Figure \ref{Tech}, reveal the great sensitivity of running time to the technology used. The blue point at $N=1$ corresponds to the regular MH algorithm. The green points correspond to the pure R implementation of the GMH, while the blue and red ones to the versions in which the vector of likelihoods $A$ is computed in parallel within a C function. More specifically, for the blue points the algorithm was run in the CDT desktop ???, while for the red ones we used OPEN MP???. The results illustrate that the parallelised versions of GMH clearly outperform both the pure R implementation and the standard MH, with the difference becoming more evident as the number $N$ of parallely drawn points increases. On the contrary, the pure R version gets increasingly slower as $N$ increases, which is perfectly consistent with the low performance of R in computing for loops.
+In the following examples, we set a mixture of univariate normals as target distribution. We compared the running times of the standard Metropolis-Hastings (MH) algorithm with the Generalised Metropolis-Hastings (GMH) using different technologies and different values of $N$ (the number of points drawn at each iteration from the proposal distribution). The results, which are plotted in Figure \ref{Tech}, reveal the sensitivity running time has to the technology used. The blue point at $N=1$ corresponds to the regular MH algorithm. The green points correspond to the pure R implementation of the GMH, while the blue and red ones to the versions in which the vector of likelihoods $A$ is computed in parallel within a C function. More specifically, for the blue points the algorithm was run in the CDT computer server \texttt{greyheron}, while for the red ones we used OpenMP. The results illustrate that the parallelised versions of GMH clearly outperform both the pure R implementation and the standard MH, with the difference becoming more evident as the number $N$ of parallel drawn points increases. On the contrary, the pure R version gets increasingly slower as $N$ increases, which is perfectly consistent with the low performance of R in interpreting for loops.
 \begin{figure}[H]
 \begin{center}
-\includegraphics[scale=0.4]{Technologies.pdf}
+\includegraphics[scale=0.8]{Technologies.pdf}
 \caption{Time comparison between different technologies.}
 \label{Tech}
 \end{center}
 \end{figure}
 
 \section{Extensions}
-Write here all the stuff that Tom wanted to do but didn't have time to do it
+The natural progression for this algorithm is to evaluate the feasibility of nested parallelism. 
+Both the OpenMP and CUDA implementation could benefit if additional proposals could be computed using an MPI cluster or an array of GPUs respectively.
+However do to the significant communication overhead of exchanging particles between devices and increasing cost of computing the acceptance ratio this would only be plausible for the most expensive target likelihood functions.
+Current tests with a relatively simple target distribution show as the number of samples computed becomes larger, and program launch overheads become irrelevant, 47\% of the time is spent computing the acceptance ratio whilst another 20\% is devoted to resampling the particles.
 
 \bibliographystyle{plainnat}
 \bibliography{references}
