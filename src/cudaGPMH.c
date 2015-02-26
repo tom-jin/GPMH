@@ -92,6 +92,7 @@ __global__ void cuda_sample(double *proposals, double *acceptance, double *sampl
 	}
 }
 
+extern "C" {
 void cudaGPMH(double *samples, void *target_dummy, void *rkernel_dummy, void *dkernel_dummy, double *init, int *num_samples, int *N)
 {
   int n = 0;
@@ -106,7 +107,6 @@ void cudaGPMH(double *samples, void *target_dummy, void *rkernel_dummy, void *dk
 	curandSetPseudoRandomGeneratorSeed(gen, (unsigned int) time(NULL));
 
 	// malloc arrays
-	samples = (double*)malloc(*num_samples * dim * sizeof(double));
 	cudaMalloc((void**)&dev_samples, *num_samples * dim * sizeof(double));
 	cudaMalloc((void**)&dev_proposals, ((*N)+1)*dim*sizeof(double));
 	cudaMalloc((void**)&dev_acceptance, ((*N)+1)*sizeof(double));
@@ -140,4 +140,5 @@ void cudaGPMH(double *samples, void *target_dummy, void *rkernel_dummy, void *dk
     cudaFree(dev_rand);
 
 	return;
+}
 }
