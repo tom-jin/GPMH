@@ -31,7 +31,7 @@ The {\tt GPMH} package provides an implementation for the general construction f
 \section{Package installation}
 The package {\tt GPMH} is located in \\ \url{https://github.com/tom-jin/GPMH.git}.\\
 Once downloaded, load the package by:
-<<packageChunk, eval=FALSE>>=
+<<packageChunk>>=
 library(GPMH)
 @
 
@@ -72,13 +72,13 @@ The computational efficiency of the Metropolis-Hastings can be improved. An intu
 \subsection{{\tt MH}}
 Runs the standard Metropolis-Hastings algorithm for sampling from a given target distribution.
 <<MHChunk>>=
-xMH<-MH(target=function(x) {0.2*dnorm(x,12,1)+0.3*dnorm(x,8,1)+0.4*dnorm(x,4,1)+0.6*dnorm(x,15,1)+0.3*dnorm(x,20,1)},
+xMH <- MH(target=function(x) {0.2*dnorm(x,12,1)+0.3*dnorm(x,8,1)+0.4*dnorm(x,4,1)+0.6*dnorm(x,15,1)+0.3*dnorm(x,20,1)},
          kernel=function(x) {rnorm(n=1, x)},
          dkernel=function(x,y) {dnorm(y, x)},
          init.state=5,
-         n=100000)
+         n=10000)
 
-plot(xMH$x)
+plot(xMH$x, type="l")
 summary(xMH$x)
 @
 \subsection{{\tt rGPMH}}
@@ -88,10 +88,10 @@ xGMH<-rGPMH(target=function(x) {0.2*dnorm(x,12,1)+0.3*dnorm(x,8,1)+0.4*dnorm(x,4
           kernel=function(x) {rnorm(n=1, x)},
           dkernel=function(x,y) {dnorm(y, x)},
           init.state=5,
-          n=100000,
+          n=10000,
           N=8)
 
-plot(xGMH$x)
+plot(xGMH$x, type="l")
 summary(xGMH$x)
 @
 \subsection{{\tt rcGPMH}}
@@ -101,10 +101,10 @@ xrcGMH<-rcGPMH(target=function(x) {0.2*dnorm(x,12,1)+0.3*dnorm(x,8,1)+0.4*dnorm(
               kernel=function(x) {rnorm(n=1, x)},
               dkernel=function(x,y) {dnorm(y, x)},
               init.state=5,
-              n=100000,
+              n=10000,
               N=8)
 
-plot(xrcGMH$x)
+plot(xrcGMH$x, type="l")
 summary(xrcGMH$x)
 @
 
