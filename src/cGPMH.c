@@ -26,7 +26,7 @@ double dtarget(double *value)
 	return 0.1 * gsl_ran_gaussian_pdf(*value-12, 1) + 0.2 * gsl_ran_gaussian_pdf(*value-8, 1) + 0.3 * gsl_ran_gaussian_pdf(*value-4, 1) + 0.4 * gsl_ran_gaussian_pdf(*value, 1);// * gsl_ran_flat_pdf(*(value+1), -100, 100);
 }
 
-void cGPMH(double *samples, void *target_dummy, void *rkernel_dummy, void *dkernel_dummy, double *init, int num_samples, int N)
+void cGPMH(double *samples, void *target_dummy, void *rkernel_dummy, void *dkernel_dummy, double *init, int *num_samples, int *N)
 {
 	int n = 0;
   int dim = 2;
@@ -37,44 +37,42 @@ void cGPMH(double *samples, void *target_dummy, void *rkernel_dummy, void *dkern
 	r = gsl_rng_alloc(gsl_rng_mt19937);
 
 	// malloc arrays
-	samples = (double*)malloc(num_samples * dim * sizeof(double));
-	proposals = (double*)malloc((N+1) * dim * sizeof(double));
-	acceptance = (double*)malloc((N+1) * sizeof(double));
+	proposals = (double*)malloc((*N+1) * dim * sizeof(double));
+	acceptance = (double*)malloc((*N+1) * sizeof(double));
 
-	while(n < num_samples) {
+	while(n < *num_samples) {
 		// MCMC Update
+    
 		if (n == 0)
-			//proposals[N] = init;
-			memcpy(proposals+(dim*N), &init, dim * sizeof(double));
+			memcpy(proposals+(dim*(*N)), init, dim * sizeof(double));
 		else
-			gsl_ran_sample(r, proposals+(dim*N), 1, samples+dim*(n-N), N, dim * sizeof(double));
+			gsl_ran_sample(r, proposals+(dim*(*N)), 1, samples+dim*(n-(*N)), (*N), dim * sizeof(double));
 
-		for(int i=0; i < N; i++) {
-			rkernel(proposals+(dim*N), proposals+(dim*i));
+		for(int i=0; i < (*N); i++) {
+			rkernel(proposals+(dim*(*N)), proposals+(dim*i));
 		}
 
 		// Calculate acceptance probability
-		for(int i=0; i < N+1; i++) {
+		for(int i=0; i < (*N)+1; i++) {
 			acceptance[i] = dtarget(proposals+(dim*i));
-			for (int j=0; j < N+1; j++) {
+			for (int j=0; j < (*N)+1; j++) {
 				if (i==j) continue;
 				acceptance[i] *= dkernel(proposals+(dim*i), proposals+(dim*j));
 			}
 		}
 
-		gsl_ran_discrete_t *g = gsl_ran_discrete_preproc(N+1, acceptance);
+		gsl_ran_discrete_t *g = gsl_ran_discrete_preproc((*N)+1, acceptance);
 
 		// Sample
-		for(int i=0; i < N; i++) {
+		for(int i=0; i < (*N); i++) {
 			int a = gsl_ran_discrete(r, g);
-			//samples[dim*(n+i)] = proposals[dim*a];
+			samples[dim*(n+i)] = proposals[dim*a];
 			memcpy(samples+dim*(n+i), proposals+(dim*a), dim * sizeof(double));
 		}
 		gsl_ran_discrete_free(g);
 
 		//Update counter.
-		n += N;
+		n += (*N);
 	}
-
-	return;
+  samples[0] = 1234;
 }
