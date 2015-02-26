@@ -95,7 +95,6 @@ __global__ void cuda_sample(double *proposals, double *acceptance, double *sampl
 void cudaGPMH(double *samples, void *target_dummy, void *rkernel_dummy, void *dkernel_dummy, double *init, int *num_samples, int *N)
 {
   int n = 0;
-  int dim = 2;
 	const int dim = 2;
 
 	double *dev_samples, *dev_proposals, *dev_acceptance, *dev_rand;
