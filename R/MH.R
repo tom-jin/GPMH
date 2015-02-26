@@ -10,7 +10,6 @@
 #'  @return Returns a vector of \code{n} samples from the target distribution.
 #'  @example demo/DemoMH.R
 #'  @export MH
- 
 MH <- function(target, kernel, dkernel, init.state, n)
 {
   d <- length(init.state)

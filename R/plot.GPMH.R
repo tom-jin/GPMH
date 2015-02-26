@@ -1,4 +1,4 @@
-plot.GPMH <- function(obj){
+plot.GPMH <- function(object, ...){
   x <- obj$x
   xn <- data.frame(x=(x-mean(x))/sd(x))
   Xculm <- array(data=NA,dim=length(x))

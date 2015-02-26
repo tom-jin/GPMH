@@ -1,0 +1,3 @@
+DemoMH Classic Metropolis-Hastings
+DemoR Example run purely in R
+DemoRC Example run using C code called via .C

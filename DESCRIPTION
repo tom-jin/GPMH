@@ -7,5 +7,6 @@ Author: Tom Jin <sjin@stats.ox.ac.uk>, Alejandra Avalos Pacheco <avalos@stats.ox
 Maintainer: Tom Jin <sjin@stats.ox.ac.uk>
 Description: An implementation of 'A general construction for parallelizing Metropolis Hastings algorithms' by Calderhead (2014).
 License: GPL-2
+Requires: ggplot2
 Suggests: knitr
 VignetteBuilder: knitr
