@@ -102,17 +102,17 @@ void cudaGPMH(double *samples, void *target_dummy, void *rkernel_dummy, void *dk
 
 	// Seed random number generator
   srand((unsigned int)time(0));
-	CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
-	CURAND_CALL(curandSetPseudoRandomGeneratorSeed(gen, (unsigned int) time(NULL)));
+	curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
+	curandSetPseudoRandomGeneratorSeed(gen, (unsigned int) time(NULL));
 
 	// malloc arrays
 	samples = (double*)malloc(*num_samples * dim * sizeof(double));
-	CUDA_CALL(cudaMalloc((void**)&dev_samples, *num_samples * dim * sizeof(double)));
-	CUDA_CALL(cudaMalloc((void**)&dev_proposals, ((*N)+1)*dim*sizeof(double)));
-	CUDA_CALL(cudaMalloc((void**)&dev_acceptance, ((*N)+1)*sizeof(double)));
-	CUDA_CALL(cudaMalloc((void**)&dev_rand, (*N)*dim*sizeof(double)));
+	cudaMalloc((void**)&dev_samples, *num_samples * dim * sizeof(double));
+	cudaMalloc((void**)&dev_proposals, ((*N)+1)*dim*sizeof(double));
+	cudaMalloc((void**)&dev_acceptance, ((*N)+1)*sizeof(double));
+	cudaMalloc((void**)&dev_rand, (*N)*dim*sizeof(double));
 
-	CUDA_CALL(cudaMemcpy(dev_proposals+(dim*(*N)), &init, dim * sizeof(double), cudaMemcpyDefault));
+	cudaMemcpy(dev_proposals+(dim*(*N)), &init, dim * sizeof(double), cudaMemcpyDefault);
 
 	while(n < *num_samples) {
 		// MCMC Update
