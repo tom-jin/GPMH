@@ -4,5 +4,5 @@
 #' hastings by Calderhead using various technologies for comparison.
 #' 
 #' @docType package
-#' @name foo
+#' @name GPMH
 NULL
